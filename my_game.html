@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة المتاهة المتقدمة</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #1a1a2e;
+            color: #fff;
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #2e2e4a;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+            width: 100%;
+        }
+
+        h1 {
+            color: #e94560;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-align: center;
+        }
+
+        #gameCanvas {
+            border: 5px solid #8843c0;
+            background-color: #3b3b5c;
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            touch-action: none;
+            width: 100%;
+            height: auto;
+            max-width: 500px;
+            max-height: 500px;
+        }
+        
+        #message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(46, 46, 74, 0.95);
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+            text-align: center;
+            z-index: 100;
+            display: none;
+        }
+
+        #message-box h2 {
+            color: #4CAF50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        #message-box p {
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: #fff;
+        }
+
+        #message-box button {
+            background-color: #e94560;
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin-top: 20px;
+        }
+        
+        #message-box button:hover {
+            background-color: #c93b50;
+            transform: scale(1.05);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .controls button {
+            background-color: #8843c0;
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .controls button:hover {
+            background-color: #6a349c;
+            transform: translateY(-2px);
+        }
+        
+        #button-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            gap: 15px;
+            width: 100%;
+        }
+
+        #directional-buttons {
+            display: grid;
+            grid-template-areas:
+                ". up ."
+                "left . right"
+                ". down .";
+            gap: 10px;
+            width: 150px;
+            height: 150px;
+        }
+
+        #directional-buttons button {
+            background-color: #4CAF50;
+            color: #fff;
+            font-size: 1.5rem;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #directional-buttons button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        #directional-buttons .up { grid-area: up; }
+        #directional-buttons .down { grid-area: down; }
+        #directional-buttons .left { grid-area: left; }
+        #directional-buttons .right { grid-area: right; }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>لعبة المتاهة</h1>
+        <canvas id="gameCanvas"></canvas>
+        <div class="controls">
+            <button id="easy-btn">مستوى سهل</button>
+            <button id="hard-btn">مستوى مستحيل</button>
+        </div>
+        
+        <div id="button-panel">
+            <div id="directional-buttons">
+                <button class="up" data-direction="up">▲</button>
+                <button class="left" data-direction="left">◄</button>
+                <button class="right" data-direction="right">►</button>
+                <button class="down" data-direction="down">▼</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="message-box">
+        <h2 id="message-title"></h2>
+        <p id="message-text"></p>
+        <button id="nextLevelButton">المستوى التالي</button>
+        <button id="restartButton">إعادة اللعب</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const messageBox = document.getElementById('message-box');
+            const messageTitle = document.getElementById('message-title');
+            const messageText = document.getElementById('message-text');
+            const nextLevelButton = document.getElementById('nextLevelButton');
+            const restartButton = document.getElementById('restartButton');
+            const easyBtn = document.getElementById('easy-btn');
+            const hardBtn = document.getElementById('hard-btn');
+            const directionalButtons = document.getElementById('directional-buttons');
+
+            let cellSize;
+            let maze;
+            let player;
+            let gameActive = true;
+            let currentDifficulty = 'easy';
+
+            const canvasSize = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.7, 500);
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            
+            // Generates a random maze using a simple recursive backtracking algorithm
+            function generateMaze(width, height) {
+                const maze = Array(height).fill(null).map(() => Array(width).fill(1)); // 1 = wall
+                const stack = [];
+                let current = { x: 1, y: 1 };
+                maze[current.y][current.x] = 0; // 0 = path
+                stack.push(current);
+
+                const getNeighbors = (x, y) => {
+                    const neighbors = [];
+                    const directions = [[0, -2], [0, 2], [-2, 0], [2, 0]];
+                    for (const [dx, dy] of directions) {
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        if (nx > 0 && nx < width - 1 && ny > 0 && ny < height - 1 && maze[ny][nx] === 1) {
+                            neighbors.push({ x: nx, y: ny });
+                        }
+                    }
+                    return neighbors;
+                };
+
+                while (stack.length > 0) {
+                    const next = stack.pop();
+                    const neighbors = getNeighbors(next.x, next.y);
+                    if (neighbors.length > 0) {
+                        stack.push(next);
+                        const neighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
+                        maze[ (next.y + neighbor.y) / 2 ][ (next.x + neighbor.x) / 2 ] = 0;
+                        maze[neighbor.y][neighbor.x] = 0;
+                        stack.push(neighbor);
+                    }
+                }
+
+                // Set a start and end point
+                maze[1][1] = 2; // Start
+                maze[height - 2][width - 2] = 3; // End
+                return maze;
+            }
+
+            const initGame = (difficulty) => {
+                currentDifficulty = difficulty;
+                const size = difficulty === 'easy' ? 11 : 35;
+                maze = generateMaze(size, size);
+                const startPos = findPosition(2);
+                player = { x: startPos.x, y: startPos.y };
+                gameActive = true;
+                messageBox.style.display = 'none';
+                cellSize = canvas.width / maze[0].length;
+                drawMaze();
+                drawPlayer();
+            };
+
+            const findPosition = (value) => {
+                for (let y = 0; y < maze.length; y++) {
+                    for (let x = 0; x < maze[y].length; x++) {
+                        if (maze[y][x] === value) {
+                            return { x, y };
+                        }
+                    }
+                }
+                return null;
+            };
+
+            const drawMaze = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let y = 0; y < maze.length; y++) {
+                    for (let x = 0; x < maze[y].length; x++) {
+                        ctx.beginPath();
+                        ctx.rect(x * cellSize, y * cellSize, cellSize, cellSize);
+                        if (maze[y][x] === 1) {
+                            ctx.fillStyle = '#3b3b5c';
+                        } else if (maze[y][x] === 2) {
+                            ctx.fillStyle = '#4CAF50';
+                        } else if (maze[y][x] === 3) {
+                            ctx.fillStyle = '#E94560';
+                        } else {
+                            ctx.fillStyle = '#2e2e4a';
+                        }
+                        ctx.fill();
+                        ctx.closePath();
+                    }
+                }
+            };
+
+            const drawPlayer = () => {
+                ctx.beginPath();
+                ctx.arc(player.x * cellSize + cellSize / 2, player.y * cellSize + cellSize / 2, cellSize / 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                ctx.closePath();
+            };
+
+            const checkCollision = (nextX, nextY) => {
+                if (nextX < 0 || nextX >= maze[0].length || nextY < 0 || nextY >= maze.length) {
+                    return true;
+                }
+                if (maze[nextY][nextX] === 1) {
+                    return true;
+                }
+                return false;
+            };
+
+            const movePlayer = (direction) => {
+                if (!gameActive) return;
+
+                let nextX = player.x;
+                let nextY = player.y;
+
+                switch (direction) {
+                    case 'up':
+                        nextY -= 1;
+                        break;
+                    case 'down':
+                        nextY += 1;
+                        break;
+                    case 'left':
+                        nextX -= 1;
+                        break;
+                    case 'right':
+                        nextX += 1;
+                        break;
+                }
+
+                if (!checkCollision(nextX, nextY)) {
+                    player.x = nextX;
+                    player.y = nextY;
+                    drawMaze();
+                    drawPlayer();
+                    
+                    if (maze[player.y][player.x] === 3) {
+                        endGame(true);
+                    }
+                } else {
+                    endGame(false);
+                }
+            };
+
+            const endGame = (won) => {
+                gameActive = false;
+                messageBox.style.display = 'block';
+                if (won) {
+                    messageTitle.textContent = "تهانينا!";
+                    messageText.textContent = "لقد وصلت إلى النهاية بنجاح.";
+                    nextLevelButton.style.display = 'inline-block';
+                    restartButton.style.display = 'none';
+                } else {
+                    messageTitle.textContent = "انتهت اللعبة!";
+                    messageText.textContent = "لقد اصطدمت بالجدار. حاول مرة أخرى.";
+                    nextLevelButton.style.display = 'none';
+                    restartButton.style.display = 'inline-block';
+                }
+            };
+            
+            // Keyboard Controls
+            document.addEventListener('keydown', (e) => {
+                switch (e.key) {
+                    case 'ArrowUp':
+                        movePlayer('up');
+                        break;
+                    case 'ArrowDown':
+                        movePlayer('down');
+                        break;
+                    case 'ArrowLeft':
+                        movePlayer('left');
+                        break;
+                    case 'ArrowRight':
+                        movePlayer('right');
+                        break;
+                }
+            });
+
+            // Button Controls
+            directionalButtons.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (button) {
+                    const direction = button.dataset.direction;
+                    movePlayer(direction);
+                }
+            });
+
+            nextLevelButton.addEventListener('click', () => initGame(currentDifficulty));
+            restartButton.addEventListener('click', () => initGame(currentDifficulty));
+            easyBtn.addEventListener('click', () => initGame('easy'));
+            hardBtn.addEventListener('click', () => initGame('hard'));
+
+            initGame('easy');
+        });
+    </script>
+</body>
+</html>
